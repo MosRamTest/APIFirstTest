@@ -1,18 +1,59 @@
 # APIFirstTest
 
-Simple Maven project for API-first testing using RestAssured and JUnit 5.
+Maven project for API testing using RestAssured and JUnit 5.
 
-## Project structure
+## Project overview
+
+This repository contains automated API tests implemented with RestAssured and JUnit 5. The included LoginTest demonstrates how to perform a POST login request against the project's API endpoint. Credentials are intentionally excluded from source — see the Configuration section for secure ways to provide secrets at runtime.
+
+## Project structure (relevant files)
 
 - pom.xml — Maven configuration (RestAssured, JUnit, Hamcrest)
-- src/test/java/org/example/LoginTest.java — Login test example
-- Other tests and helpers under src/test/java/**
+- src/test/java/org/example/LoginTest.java — Login test example (reads credentials from env vars or system properties)
+- src/test/java/... — other test packages and helpers
 
 ## Prerequisites
 
 - Java 21 (JDK)
 - Maven 3.8+
 - Network access to the target API
+
+## How the login test works
+
+- Endpoint used in the tests: https://www.ndosiautomation.co.za/API/login
+- The test sends a JSON body with email and password (the test reads values from environment variables or Maven properties; it does not contain credentials in source control).
+- The test uses relaxed HTTPS validation (RestAssured.useRelaxedHTTPSValidation()) to avoid TLS issues in local/test environments — remove or change in production as needed.
+- The test asserts a successful HTTP response (adjust assertions as required by your API) and prints the response body for debugging.
+
+## Securely supplying credentials (do NOT store real credentials in source)
+
+Recommended approaches:
+
+1) Environment variables (recommended)
+
+- Set environment variables before running tests:
+  - API_EMAIL — the login email
+  - API_PASSWORD — the login password
+
+Examples:
+- PowerShell:
+  $env:API_EMAIL = "you@example.com"; $env:API_PASSWORD = "yourPassword"; mvn test
+
+- Windows CMD:
+  set API_EMAIL=you@example.com && set API_PASSWORD=yourPassword && mvn test
+
+2) Maven system properties (ephemeral)
+
+- Pass credentials on the mvn command line (they will not be stored in the repository):
+  mvn -Dapi.email=you@example.com -Dapi.password=yourPassword test
+
+- In tests read via: System.getProperty("api.email") and System.getProperty("api.password").
+
+3) CI/CD secrets (best for automated pipelines)
+
+- Use your CI provider's secret store (GitHub Actions secrets, GitLab CI variables, Jenkins credentials, etc.) and inject them into the build as environment variables.
+
+Important: treat secrets securely. Avoid echoing them in logs and do not commit them to version control.
 
 ## Run tests
 
@@ -24,45 +65,29 @@ To run only the login test method:
 
 mvn -Dtest=org.example.LoginTest#loginWithEmailAndPassword test
 
-## Login test details
+If you pass credentials via Maven properties and want to run only the login method, combine both options:
 
-- Endpoint: https://www.ndosiautomation.co.za/API/login
-- Payload (example, do not store credentials in source):
-  {
-    "email": "<YOUR_EMAIL>",
-    "password": "<YOUR_PASSWORD>"
-  }
+mvn -Dapi.email=you@example.com -Dapi.password=yourPassword -Dtest=org.example.LoginTest#loginWithEmailAndPassword test
 
-Important: do not keep real credentials in source code. Configure secrets using one of the approaches below.
+## Test behavior and tips
 
-## Configuring credentials
-
-Options to avoid hardcoding credentials in tests:
-
-- Environment variables (recommended):
-  - Set API_EMAIL and API_PASSWORD in your environment and modify LoginTest to read them:
-    - System.getenv("API_EMAIL") / System.getenv("API_PASSWORD")
-
-- Maven system properties:
-  - mvn -Dapi.email=you@example.com -Dapi.password=secret test
-  - Read them in tests via System.getProperty("api.email") and System.getProperty("api.password").
-
-- CI/CD secret management: use your CI provider's secret store and inject as environment variables at runtime.
-
-## Test behavior
-
-- Tests use relaxed HTTPS validation to tolerate self-signed certificates (can be removed in production).
-- The login test asserts HTTP 200 and will check for a returned JSON `token` field if present.
-- Tests print response body to stdout for debugging when assertions fail.
+- The login test will be skipped if credentials are not provided (JUnit assumptions can be used in the test to skip when credentials are missing).
+- If your environment blocks outgoing traffic, make sure you have network access to the target host or run tests against a mocked/staging endpoint.
+- If your API returns different success status codes or additional response fields (for example `token`, `userId`, or `role`), update assertions in the test accordingly.
 
 ## Troubleshooting
 
-- Dependency resolution failures: run `mvn -U test` to force update of dependencies.
-- SSL errors: verify certificate or disable relaxed HTTPS validation only for local testing.
-- If tests fail with unexpected status codes, inspect the printed response body for error details.
+- Dependency resolution failures: run `mvn -U test` to force-update dependencies.
+- SSL/TLS errors: check certificates or remove relaxed TLS in tests only after validating certs.
+- Unexpected response codes: inspect printed response body to see API error messages.
 
 ## Next steps
 
-- Parameterize tests to use environment variables or system properties for credentials.
-- Add negative tests (invalid credentials, missing fields) and other endpoints (registration, token refresh).
-- Extract common setup into a base test or RequestBuilder utility.
+- Parameterize and centralize configuration (baseURI, timeouts, common headers) in a base test class.
+- Add negative tests for invalid credentials and missing fields.
+- Integrate with CI and use secret management to inject credentials securely.
+
+If you want, I can:
+- Update README with CI-specific examples (GitHub Actions, GitLab CI).
+- Refactor tests to centralize configuration and remove relaxed TLS for production runs.
+- Add an example .env file template (excluded from commits) and .gitignore entries for local secret files.
