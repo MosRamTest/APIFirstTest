@@ -7,12 +7,12 @@ import org.junit.Test;
 public class NdosiAPIPayloadBuilder {
 
 
-    public static JSONObject loginPayload ()
+    public static JSONObject loginPayload (String email, String password)
     {
         JSONObject jsonObject = new JSONObject();
 
-        jsonObject.put("email","king@gmail.com");
-        jsonObject.put("password","King1234");
+        jsonObject.put("email",email);
+        jsonObject.put("password",password);
 
         return jsonObject;
     }

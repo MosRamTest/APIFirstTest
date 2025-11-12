@@ -18,7 +18,7 @@ public class NdosiAPITest {
     @Description("I want to login to Ndosi API with valid credentials")
     public void loginTest()
     {
-        loginResponse().
+        loginResponse("king@gmail.com", "King1234").
                 then().
                 log().all().
                 assertThat().statusCode(success_status_code);
