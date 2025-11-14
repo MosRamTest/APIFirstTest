@@ -8,20 +8,37 @@ import org.testng.annotations.*;
 
 import static Common.commonTestData.*;
 import static RequestBuilder.NdosiAPIRequestBuilder.*;
+import static Utils.generateTestData.*;
+import static org.hamcrest.Matchers.*;
 
 @Test
 @Feature("Ndosi API Tests")
 @Story("Login")
 
+
+
 public class NdosiAPITest {
 
-    @Description("I want to login to Ndosi API with valid credentials")
-    public void loginTest()
-    {
-        loginResponse("king@gmail.com", "King1234").
+    @Description("I want to Register User to Ndosi API")
+    public void registerTest() {
+
+        registerResponse(firstName, lastName, email, password, password).
                 then().
                 log().all().
-                assertThat().statusCode(success_status_code);
+                assertThat().
+                statusCode(created_status_code).body(containsString("data")).
+                body("success", equalTo(true)).body("message", equalTo("User registered successfully"));
+
+    }
+
+    @Description("I want to login to Ndosi API with valid credentials")
+    @Test(dependsOnMethods = "registerTest")
+    public void loginTest()
+    {
+        loginResponse(email, password).
+                then().
+                log().all().
+                statusCode(success_status_code);
     }
 
 
