@@ -27,7 +27,13 @@ public class NdosiAPITest {
                 log().all().
                 assertThat().
                 statusCode(created_status_code).body(containsString("data")).
-                body("success", equalTo(true)).body("message", equalTo("User registered successfully"));
+                body("success", equalTo(true)).
+                body("message", equalTo("User registered successfully")).
+                body("data.email", equalTo(email)).
+                body("data.firstName", equalTo(firstName)).
+                body("data.lastName", equalTo(lastName)).
+                body("data.id", notNullValue()).
+                body("data.createdAt", notNullValue()); ;
 
     }
 
@@ -38,7 +44,16 @@ public class NdosiAPITest {
         loginResponse(email, password).
                 then().
                 log().all().
-                statusCode(success_status_code);
+                assertThat().statusCode(success_status_code).
+                body("success", equalTo(true)).
+                body("message", equalTo("Login successful")).
+                body("data.token", notNullValue()).
+                body("data.user.id", notNullValue()).
+                body("data.user.firstName", equalTo(firstName)).
+                body("data.user.lastName", equalTo(lastName)).
+                body("data.user.email", equalTo(email)).
+                body("data.user.createdAt", notNullValue()).
+                body("data.user.updatedAt", notNullValue());
     }
 
 
